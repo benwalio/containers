@@ -1,0 +1,13 @@
+
+{
+  "app": "coredns-unbound",
+  "base": false,
+  "channels": [
+    {
+      "name": "stable",
+      "platforms": [
+        "linux/amd64"
+      ]
+    }
+  ]
+}
