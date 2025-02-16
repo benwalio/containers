@@ -238,8 +238,8 @@ jobs:
         with:
           export-env: true
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.ONEPASS_SA_TOKEN }}
-          DISCORD_WEBHOOK: op://${{ env.OP_VAULT }}/discord/DISCORD_WEBHOOK_URL
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SA_TOKEN }}
+          DISCORD_WEBHOOK: op://${{ env.OP_VAULT }}/discord/DISCORD_GHA_WEBHOOK_URL
 
       - name: Lowercase repository owner
         shell: bash
