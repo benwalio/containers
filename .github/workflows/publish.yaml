@@ -1,0 +1,75 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Build & publish container images
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  find-changed-images:
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.set-matrix.outputs.apps }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Collect changed files
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          base: "main"
+          list-files: json
+          filters: |
+            changed:
+              - added|deleted|modified: 'apps/*/**'
+
+      - name: Set apps Matrix
+        if: ${{ steps.filter.outputs.changed == 'true' }}
+        id: set-matrix
+        run: |
+          PATHS='${{ steps.filter.outputs.changed_files }}'
+          DATA=$(echo $PATHS | jq -c '. | map(split("/")[1]) | unique')
+          echo "apps=$DATA" >> "$GITHUB_OUTPUT"
+
+  build-and-publish-changed-images:
+    needs: find-changed-images
+    if: ${{ needs.find-changed-images.outputs.apps != '' && toJson(fromJson(needs.find-changed-images.outputs.apps)) != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.find-changed-images.outputs.apps) }}
+
+    steps:
+      - name: Lowercase repository owner
+        shell: bash
+        run: echo "LOWERCASE_REPO_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to ghcr
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Container meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ env.LOWERCASE_REPO_OWNER }}/${{ matrix.app }}
+          tags: |
+            type=sha, format=long
+
+      - name: Build and push to ghcr
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: "apps/${{ matrix.app }}/Dockerfile"
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
