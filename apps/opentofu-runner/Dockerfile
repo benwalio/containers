@@ -5,6 +5,7 @@ ARG TARGETARCH
 ARG TARGETPLATFORM
 ARG TARGETOS
 
+
 LABEL dev.benwalio.image.target_platform=$TARGETPLATFORM
 LABEL dev.benwalio.image.target_architecture=$TARGETARCH
 LABEL dev.benwalio.image.target_os=$TARGETOS
