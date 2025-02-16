@@ -1,0 +1,10 @@
+{
+  "app": "kutt",
+  "base": false,
+  "channels": [
+    {
+      "name": "stable",
+      "platforms": ["linux/amd64"]
+    }
+  ]
+}

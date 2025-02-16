@@ -1,0 +1,10 @@
+{
+  "app": "node-12-alpine",
+  "base": false,
+  "channels": [
+    {
+      "name": "stable",
+      "platforms": ["linux/amd64"]
+    }
+  ]
+}
