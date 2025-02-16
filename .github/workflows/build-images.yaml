@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: "Workflow call: Build Images"
+name: "Image Build"
 
 on:
   workflow_call:
@@ -25,10 +25,14 @@ on:
         required: false
         default: true
         type: boolean
-        description: "Rebuild images regardless of whether version has changed"
-
-env:
-  OP_VAULT: ${{ vars.OP_VAULT }}
+        description: Force rebuild
+    secrets:
+      BOT_APP_ID:
+        description: The App ID of the GitHub App
+        required: true
+      BOT_APP_PRIVATE_KEY:
+        description: The private key of the GitHub App
+        required: true
 
 jobs:
   prepare:
@@ -36,14 +40,22 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrices: ${{ steps.prepare-matrices.outputs.matrices }}
-      runnner: ${{ steps.set-runner.outputs.runner }}
     steps:
       - name: Lowercase repository owner
         shell: bash
         run: echo "LOWERCASE_REPO_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
 
+      - name: Generate Token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: "${{ secrets.BOT_APP_ID }}"
+          private-key: "${{ secrets.BOT_APP_PRIVATE_KEY }}"
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: "${{ steps.app-token.outputs.token }}"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -58,7 +70,7 @@ jobs:
       - name: Prepare Matrices
         id: prepare-matrices
         env:
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOKEN: ${{ steps.app-token.outputs.token }}
         shell: bash
         run: |
           if [[ -z "${{ inputs.appsToBuild }}" ]]; then
@@ -77,7 +89,6 @@ jobs:
     name: Build/Test ${{ matrix.image.name }} (${{ matrix.image.platform }})
     needs: prepare
     runs-on: ubuntu-latest
-    # runs-on: ${{ matrix.image.builder }} ## ubuntu-latest or arc-runner-set-containers-arm64
     if: ${{ toJSON(fromJSON(needs.prepare.outputs.matrices).imagePlatforms) != '[]' && toJSON(fromJSON(needs.prepare.outputs.matrices).imagePlatforms) != '' }}
     strategy:
       fail-fast: false
@@ -129,15 +140,22 @@ jobs:
           echo "${{ matrix.image.name }}" | grep -E "[a-zA-Z0-9_\.\-]+" || "Image Name is invalid"
           echo "${{ matrix.image.version }}" | grep -E "[a-zA-Z0-9_\.\-]+" || "Image Version is invalid"
 
+      - name: Generate Token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: "${{ secrets.BOT_APP_ID }}"
+          private-key: "${{ secrets.BOT_APP_PRIVATE_KEY }}"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          token: "${{ steps.app-token.outputs.token }}"
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to GHCR
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -172,7 +190,8 @@ jobs:
             VERSION=${{ matrix.image.version }}
             REVISION=${{ github.sha }}
             CHANNEL=${{ matrix.image.channel }}
-          context: ${{ matrix.image.context }}
+          # TODO: Use ${{ matrix.image.context }}, requires updates to all dockerfiles :-(
+          context: .
           platforms: ${{ matrix.image.platform }}
           file: ${{ matrix.image.dockerfile }}
           outputs: ${{ steps.prepare-build-outputs.outputs.outputs }}
@@ -207,13 +226,14 @@ jobs:
       - name: Export Digest
         id: export-digest
         if: ${{ inputs.pushImages }}
+        shell: bash
         run: |
           mkdir -p /tmp/${{ matrix.image.name }}/digests
           digest="${{ steps.build.outputs.digest }}"
           echo "${{ matrix.image.name }}" > "/tmp/${{ matrix.image.name }}/digests/${digest#sha256:}"
 
       - name: Upload Digest
-        if: ${{ inputs.pushImages }}
+        if: ${{ inputs.pushImages}}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.image.name }}-${{ matrix.image.target_os }}-${{ matrix.image.target_arch }}
@@ -233,14 +253,6 @@ jobs:
         image: ["${{ fromJSON(needs.prepare.outputs.matrices).images }}"]
       fail-fast: false
     steps:
-      - name: Get Secrets
-        uses: 1password/load-secrets-action@v2
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SA_TOKEN }}
-          DISCORD_WEBHOOK: op://${{ env.OP_VAULT }}/discord/DISCORD_GHA_WEBHOOK_URL
-
       - name: Lowercase repository owner
         shell: bash
         run: echo "LOWERCASE_REPO_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
@@ -321,7 +333,7 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         if: ${{ always() && inputs.sendNotifications == 'true' }}
         with:
-          webhook: ${{ env.DISCORD_WEBHOOK }}
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
           title: ${{ steps.build-failed.outputs.message || steps.build-success.outputs.message }}
           color: ${{ steps.build-failed.outputs.color || steps.build-success.outputs.color }}
           username: GitHub Actions
