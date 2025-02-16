@@ -1,0 +1,21 @@
+---
+# Renovate
+- name: renovate/container
+  color: "027fa0"
+
+# SemanticType
+- name: type/patch
+  color: "ffec19"
+
+- name: type/minor
+  color: "ff9800"
+
+- name: type/major
+  color: "f6412d"
+
+- name: type/break
+  color: "f6412d"
+
+# Uncategorized
+- name: hold
+  color: "ee0701"
