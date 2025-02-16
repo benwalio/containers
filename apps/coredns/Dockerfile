@@ -1,4 +1,4 @@
-FROM alpine:3.17.1 AS grab
+FROM alpine:3.17.10 AS grab
 
 ARG COREDNS_VERSION=1.10.0
 
