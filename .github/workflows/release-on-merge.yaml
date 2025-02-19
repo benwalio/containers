@@ -13,6 +13,7 @@ on:
       - "apps/**"
       - "scripts/templates/**"
       - "!apps/**/metadata.json"
+      - "!apps/**/metadata.yaml"
       - "!apps/**/README.md"
 
 jobs:
