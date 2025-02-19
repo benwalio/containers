@@ -1,10 +1,9 @@
 FROM docker.io/library/python:3.12-alpine
 
+ARG VERSION
 ARG TARGETPLATFORM
 ARG TARGETARCH
 ARG TARGETOS
-
-ARG VERSION="0.6.23"
 
 LABEL dev.benwalio.image.target_platform=$TARGETPLATFORM
 LABEL dev.benwalio.image.target_architecture=$TARGETARCH
@@ -68,7 +67,7 @@ RUN \
 
 COPY --from=ghcr.io/cdloh/calibre-bare:7.26.0 / /opt/calibre
 COPY --from=ghcr.io/benwalio/kepubify:4.0.4 /app/kepubify /opt/kepubify/kepubify
-COPY ./entrypoint.sh /entrypoint.sh
+COPY ./apps/calibre-web/entrypoint.sh /entrypoint.sh
 
 USER nobody:nogroup
 
