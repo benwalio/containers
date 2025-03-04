@@ -22,7 +22,7 @@ RUN set -xe \
 RUN git clone https://github.com/coredns/coredns.git \
   && echo "unbound:github.com/coredns/unbound" >> /tmp/coredns/plugin.cfg
 
-FROM golang:1.24.0 AS build
+FROM golang:1.24.1 AS build
 
 COPY --from=grab /tmp/coredns /project
 
