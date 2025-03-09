@@ -21,5 +21,6 @@
       "strings": true
     }
   },
-  "docker.languageserver.formatter.ignoreMultilineInstructions": true
+  "docker.languageserver.formatter.ignoreMultilineInstructions": true,
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv"
 }
