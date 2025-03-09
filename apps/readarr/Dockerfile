@@ -51,7 +51,7 @@ RUN \
     && chown -R root:root /app && chmod -R 755 /app \
     && rm -rf /tmp/* /app/bin/Readarr.Update
 
-COPY ./entrypoint.sh /entrypoint.sh
+COPY ./apps/readarr/entrypoint.sh /entrypoint.sh
 
 USER nobody:nogroup
 WORKDIR /config
