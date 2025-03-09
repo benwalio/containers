@@ -1,5 +1,5 @@
 ARG VERSION
-FROM docker.io/library/alpine:3.20
+FROM docker.io/library/alpine:3.21
 
 ARG VERSION
 ARG CHANNEL
@@ -10,14 +10,14 @@ ARG TARGETOS
 LABEL dev.benwalio.image.target_platform=$TARGETPLATFORM
 LABEL dev.benwalio.image.target_architecture=$TARGETARCH
 LABEL dev.benwalio.image.target_os=$TARGETOS
-LABEL org.opencontainers.image.source="https://github.com/Readarr/Readarr"
-
-ENV \
-    COMPlus_EnableDiagnostics="0" \
-    READARR__UPDATE__BRANCH="${CHANNEL}"
+LABEL org.opencontainers.image.source="https://github.com/Prowlarr/Prowlarr"
 
 ENV UMASK="0002" \
     TZ="Etc/UTC"
+
+ENV \
+    DOTNET_EnableDiagnostics="0" \
+    PROWLARR__UPDATE__BRANCH="${CHANNEL}"
 
 USER root
 WORKDIR /app
@@ -38,20 +38,19 @@ RUN \
         sqlite-libs \
         trurl \
         tzdata \
-        xmlstarlet \
     && \
     case "${TARGETPLATFORM}" in \
         'linux/amd64') export ARCH='x64' ;; \
         'linux/arm64') export ARCH='arm64' ;; \
     esac \
     && mkdir -p /app/bin \
-    && curl -fsSL "https://readarr.servarr.com/v1/update/${READARR__UPDATE__BRANCH}/updatefile?version=${VERSION}&os=linuxmusl&runtime=netcore&arch=${ARCH}" \
+    && curl -fsSL "https://prowlarr.servarr.com/v1/update/${PROWLARR__UPDATE__BRANCH}/updatefile?version=${VERSION}&os=linuxmusl&runtime=netcore&arch=${ARCH}" \
         | tar xzf - -C /app/bin --strip-components=1 \
-    && printf "UpdateMethod=docker\nBranch=%s\nPackageVersion=%s\nPackageAuthor=[benwalio](https://github.com/benwalio)\n" "${READARR__UPDATE__BRANCH}" "${VERSION}" > /app/package_info \
+    && printf "UpdateMethod=docker\nBranch=%s\nPackageVersion=%s\nPackageAuthor=[benwalio](https://github.com/benwalio)\n" "${PROWLARR__UPDATE__BRANCH}" "${VERSION}" > /app/package_info \
     && chown -R root:root /app && chmod -R 755 /app \
-    && rm -rf /tmp/* /app/bin/Readarr.Update
+    && rm -rf /tmp/*  /app/bin/Prowlarr.Update
 
-COPY ./apps/readarr/entrypoint.sh /entrypoint.sh
+COPY ./apps/prowlarr/entrypoint.sh /entrypoint.sh
 
 USER nobody:nogroup
 WORKDIR /config
