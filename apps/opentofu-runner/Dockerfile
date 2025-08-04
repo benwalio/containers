@@ -1,4 +1,4 @@
-FROM docker.io/library/alpine:3.21 AS opentofu
+FROM docker.io/library/alpine:3.22 AS opentofu
 
 ARG VERSION
 ARG TARGETARCH
